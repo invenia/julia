@@ -106,8 +106,6 @@ static GlobalValue *realize_pending_global(Instruction *User, GlobalValue *G, st
                             Function::ExternalLinkage,
                             F->getName(),
                             M);
-            } else {
-                std::cout << "Already there" << std::endl;
             }
             FixedGlobals[M] = NewF;
         }
