@@ -177,6 +177,8 @@ static IRBuilder<> builder(getGlobalContext());
 static bool nested_compile = false;
 static TargetMachine *jl_TargetMachine;
 
+extern JITEventListener* CreateJuliaJITEventListener();
+
 #include "jitlayers.cpp"
 
 #ifdef USE_ORCJIT
@@ -1212,7 +1214,6 @@ void jl_extern_c(jl_function_t *f, jl_value_t *rt, jl_value_t *argt, char *name)
 }
 
 // --- native code info, and dump function to IR and ASM ---
-extern JITEventListener* CreateJuliaJITEventListener();
 
 extern int jl_get_llvmf_info(uint64_t fptr, uint64_t *symsize, uint64_t *slide,
 #ifdef USE_MCJIT
@@ -6302,6 +6303,7 @@ extern "C" void jl_init_codegen(void)
     else
         init_julia_llvm_env(builtins_module);
 
+#ifndef USE_ORCJIT
     jl_ExecutionEngine->RegisterJITEventListener(CreateJuliaJITEventListener());
 #ifdef JL_USE_INTEL_JITEVENTS
     if (jl_using_intel_jitevents)
@@ -6314,6 +6316,7 @@ extern "C" void jl_init_codegen(void)
         jl_ExecutionEngine->RegisterJITEventListener(
             JITEventListener::createOProfileJITEventListener());
 #endif // JL_USE_OPROFILE_JITEVENTS
+#endif
 
     BOX_F(int8,int8);  UBOX_F(uint8,uint8);
     BOX_F(int16,int16); UBOX_F(uint16,uint16);
