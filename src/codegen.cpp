@@ -448,7 +448,6 @@ static GlobalVariable *jlemptytuple_var;
 static GlobalVariable *jlfloattemp_var;
 #endif
 static GlobalVariable *jldiverr_var;
-static GlobalVariable *jlundeferr_var;
 static GlobalVariable *jldomerr_var;
 static GlobalVariable *jlovferr_var;
 static GlobalVariable *jlinexacterr_var;
@@ -5613,8 +5612,6 @@ static void init_julia_llvm_env(Module *m)
     jlemptytuple_var = global_to_llvm("jl_emptytuple", (void*)&jl_emptytuple, m);
     jldiverr_var = global_to_llvm("jl_diverror_exception",
                                   (void*)&jl_diverror_exception, m);
-    jlundeferr_var = global_to_llvm("jl_undefref_exception",
-                                    (void*)&jl_undefref_exception, m);
     jldomerr_var = global_to_llvm("jl_domain_exception",
                                   (void*)&jl_domain_exception, m);
     jlovferr_var = global_to_llvm("jl_overflow_exception",

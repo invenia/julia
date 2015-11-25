@@ -173,6 +173,11 @@ static LONG WINAPI _exception_handler(struct _EXCEPTION_POINTERS *ExceptionInfo,
                     jl_throw_in_ctx(jl_readonlymemory_exception, ExceptionInfo->ContextRecord,in_ctx);
                     return EXCEPTION_CONTINUE_EXECUTION;
                 }
+                else if (!ExceptionInfo->ExceptionRecord->ExceptionInformation[1]) {
+                    jl_throw_in_ctx(jl_undefref_exception,
+                                    ExceptionInfo->ContextRecord, in_ctx);
+                    return EXCEPTION_CONTINUE_EXECUTION;
+                }
         }
         jl_safe_printf("\nPlease submit a bug report with steps to reproduce this fault, and any error messages that follow (in their entirety). Thanks.\nException: ");
         switch (ExceptionInfo->ExceptionRecord->ExceptionCode) {

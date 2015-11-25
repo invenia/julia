@@ -120,6 +120,10 @@ kern_return_t catch_exception_raise(mach_port_t            exception_port,
     kern_return_t ret = thread_get_state(thread, x86_EXCEPTION_STATE64, (thread_state_t)&exc_state, &exc_count);
     HANDLE_MACH_ERROR("thread_get_state", ret);
     uint64_t fault_addr = exc_state.__faultvaddr;
+    if (!fault_addr) {
+        jl_throw_in_thread(0, thread, jl_undefref_exception);
+        return KERN_SUCCESS;
+    }
 #ifdef SEGV_EXCEPTION
     if (1) {
 #else

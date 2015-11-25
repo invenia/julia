@@ -1058,11 +1058,16 @@ static void raise_exception_unless(Value *cond, Value *exc, jl_codectx_t *ctx)
     BasicBlock *passBB = BasicBlock::Create(getGlobalContext(),"pass");
     builder.CreateCondBr(cond, passBB, failBB);
     builder.SetInsertPoint(failBB);
+    if (exc) {
 #ifdef LLVM37
-    builder.CreateCall(prepare_call(jlthrow_func), { exc });
+        builder.CreateCall(prepare_call(jlthrow_func), { exc });
 #else
-    builder.CreateCall(prepare_call(jlthrow_func), exc);
+        builder.CreateCall(prepare_call(jlthrow_func), exc);
 #endif
+    }
+    else {
+        builder.CreateLoad(Constant::getNullValue(T_ppint8), true);
+    }
     builder.CreateUnreachable();
     ctx->f->getBasicBlockList().push_back(passBB);
     builder.SetInsertPoint(passBB);
@@ -1087,8 +1092,8 @@ static void raise_exception_if(Value *cond, GlobalVariable *exc, jl_codectx_t *c
 
 static void null_pointer_check(Value *v, jl_codectx_t *ctx)
 {
-    raise_exception_unless(builder.CreateICmpNE(v,Constant::getNullValue(v->getType())),
-                           prepare_global(jlundeferr_var), ctx);
+    raise_exception_unless(builder.CreateICmpNE(v, Constant::getNullValue(v->getType())),
+                           (Value*)NULL, ctx);
 }
 
 static Value *boxed(const jl_cgval_t &v, jl_codectx_t *ctx, jl_value_t *jt=NULL);
@@ -1462,7 +1467,7 @@ static jl_cgval_t emit_getfield_knownidx(const jl_cgval_t &strct, unsigned idx, 
     Type *elty = julia_type_to_llvm(jfty);
     assert(elty != NULL);
     if (jfty == jl_bottom_type) {
-        raise_exception_unless(ConstantInt::get(T_int1,0), prepare_global(jlundeferr_var), ctx);
+        raise_exception_unless(ConstantInt::get(T_int1,0), (Value*)NULL, ctx);
         return jl_cgval_t(); // unreachable
     }
     if (type_is_ghost(elty))

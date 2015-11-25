@@ -88,6 +88,12 @@ static void segv_handler(int sig, siginfo_t *info, void *context)
         sigprocmask(SIG_UNBLOCK, &sset, NULL);
         jl_throw(jl_readonlymemory_exception);
     }
+    else if (!info->si_addr) {
+        sigemptyset(&sset);
+        sigaddset(&sset, SIGSEGV);
+        sigprocmask(SIG_UNBLOCK, &sset, NULL);
+        jl_throw(jl_undefref_exception);
+    }
     else {
 #ifdef SEGV_EXCEPTION
         sigemptyset(&sset);
