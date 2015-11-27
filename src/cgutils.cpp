@@ -32,7 +32,7 @@ static GlobalVariable *CreateGlobalString(StringRef Str,
   Constant *StrConstant = ConstantDataArray::getString(jl_LLVMContext, Str);
   GlobalVariable *GV = new GlobalVariable(*active_module, StrConstant->getType(),
                                           true, GlobalValue::PrivateLinkage,
-                                          StrConstant, Name, nullptr,
+                                          StrConstant, Name, NULL,
                                           GlobalVariable::NotThreadLocal,
                                           AddressSpace);
   GV->setUnnamedAddr(true);
@@ -255,12 +255,18 @@ extern "C" {
     extern int jl_in_inference;
 }
 
+#if defined(USE_MCJIT) || defined(USE_ORCJIT)
 static GlobalVariable *global_proto(GlobalVariable *G) {
     GlobalVariable *proto = new GlobalVariable(G->getType()->getElementType(),
             G->isConstant(), GlobalVariable::ExternalLinkage,
             NULL, G->getName(), G->getThreadLocalMode());
     return proto;
 }
+#else
+static GlobalVariable *global_proto(GlobalVariable *G) {
+    return G;
+}
+#endif
 
 static GlobalVariable *stringConst(const std::string &txt)
 {
