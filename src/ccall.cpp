@@ -4,7 +4,11 @@
 // --- the ccall, cglobal, and llvm intrinsics ---
 
 // keep track of llvmcall declarations
+#if defined(USE_MCJIT) || defined(USE_ORCJIT)
+static std::map<u_int64_t,llvm::GlobalValue*> llvmcallDecls;
+#else
 static std::set<u_int64_t> llvmcallDecls;
+#endif
 
 static std::map<std::string, GlobalVariable*> libMapGV;
 static std::map<std::string, GlobalVariable*> symMapGV;
@@ -615,6 +619,9 @@ static jl_cgval_t emit_llvmcall(jl_value_t **args, size_t nargs, jl_codectx_t *c
         std::string rstring;
         llvm::raw_string_ostream rtypename(rstring);
         rettype->print(rtypename);
+#if defined(USE_MCJIT) || defined(USE_ORCJIT)
+        std::map<u_int64_t,std::string> localDecls;
+#endif
 
         if (decl != NULL) {
             std::stringstream declarations(jl_string_data(decl));
@@ -623,8 +630,15 @@ static jl_cgval_t emit_llvmcall(jl_value_t **args, size_t nargs, jl_codectx_t *c
             std::string declstr;
             while (std::getline(declarations, declstr, '\n')) {
                 u_int64_t declhash = memhash(declstr.c_str(), declstr.length());
+#if defined(USE_MCJIT) || defined(USE_ORCJIT)
+                auto it = llvmcallDecls.find(declhash);
+                if (it != llvmcallDecls.end()) {
+                    prepare_call(it->second);
+                } else {
+#else
                 if (llvmcallDecls.count(declhash) == 0) {
-                    // Findi  name of declaration by searching for '@'
+#endif
+                    // Find name of declaration by searching for '@'
                     std::string::size_type atpos = declstr.find('@') + 1;
                     // Find end of declaration by searching for '('
                     std::string::size_type bracepos = declstr.find('(');
@@ -636,7 +650,11 @@ static jl_cgval_t emit_llvmcall(jl_value_t **args, size_t nargs, jl_codectx_t *c
                         ir_stream << "; Declarations\n" << declstr << "\n";
                     }
 
+#if defined(USE_MCJIT) || defined(USE_ORCJIT)
+                    localDecls[declhash] = declname;
+#else
                     llvmcallDecls.insert(declhash);
+#endif
                 }
             }
         }
@@ -660,6 +678,11 @@ static jl_cgval_t emit_llvmcall(jl_value_t **args, size_t nargs, jl_codectx_t *c
             jl_error(stream.str().c_str());
         }
         f = m->getFunction(ir_name);
+#if defined(USE_MCJIT) || defined(USE_ORCJIT)
+        for (auto it : localDecls) {
+            llvmcallDecls[it.first] = cast<GlobalValue>(prepare_call(m->getNamedValue(it.second)));
+        }
+#endif
     }
     else {
         assert(isPtr);
