@@ -1237,7 +1237,7 @@ extern int jl_get_llvmf_info(uint64_t fptr, uint64_t *symsize, uint64_t *slide,
 
 // Get pointer to llvm::Function instance, compiling if necessary
 extern "C" DLLEXPORT
-void *jl_get_llvmf(jl_function_t *f, jl_tupletype_t *tt, bool getwrapper)
+void *jl_get_llvmf(jl_function_t *f, jl_tupletype_t *tt, bool getwrapper, bool getdeclarations)
 {
     if (!jl_is_function(f)) {
         return NULL;
@@ -1286,6 +1286,13 @@ void *jl_get_llvmf(jl_function_t *f, jl_tupletype_t *tt, bool getwrapper)
     if (linfo->functionObjects.functionObject == NULL && linfo->functionObjects.specFunctionObject == NULL) {
         jl_compile_linfo(linfo, NULL);
     }
+    if (getdeclarations) {
+        if (getwrapper || linfo->functionObjects.specFunctionObject == NULL)
+            return linfo->functionObjects.functionObject;
+        else
+            return linfo->functionObjects.specFunctionObject;
+    }
+
     Function *llvmDecl = nullptr;
     if (!getwrapper && linfo->functionObjects.specFunctionObject != NULL)
         llvmDecl = (Function*)linfo->functionObjects.specFunctionObject;
@@ -1305,8 +1312,8 @@ void *jl_get_llvmf(jl_function_t *f, jl_tupletype_t *tt, bool getwrapper)
             llvmf = (llvm::Function*)declarations.specFunctionObject;
             other = (llvm::Function*)declarations.functionObject;
         }
-        other->eraseFromParent();
-        llvmf = (llvm::Function*)declarations.specFunctionObject;
+        if (other)
+            other->eraseFromParent();
         FPM->run(*llvmf);
         llvmf->removeFromParent();
     } else {
