@@ -2518,12 +2518,14 @@ static bool emit_known_call(jl_cgval_t *ret, jl_value_t *ff,
         if (jl_is_type_type(ty) && !jl_has_typevars(jl_tparam0(ty))) {
             jl_value_t *tp0 = jl_tparam0(ty);
             if (jl_subtype(arg, tp0, 0)) {
+                emit_expr(args[1], ctx);  // TODO remove if no side effects
                 *ret = mark_julia_type(ConstantInt::get(T_int1, 1), false, jl_bool_type);
                 JL_GC_POP();
                 return true;
             }
             if (!jl_subtype(tp0, (jl_value_t*)jl_type_type, 0)) {
                 if (jl_is_leaf_type(arg)) {
+                    emit_expr(args[1], ctx);  // TODO remove if no side effects
                     *ret = mark_julia_type(ConstantInt::get(T_int1, 0), false, jl_bool_type);
                     JL_GC_POP();
                     return true;
@@ -6298,7 +6300,7 @@ extern "C" void jl_init_codegen(void)
 #endif
     jl_init_debuginfo();
 
-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR <= 3
+#ifndef LLVM34
     // this option disables LLVM's signal handlers
     llvm::DisablePrettyStackTrace = true;
 #endif
@@ -6359,9 +6361,9 @@ extern "C" void jl_init_codegen(void)
 #if defined(_OS_WINDOWS_) && defined(_CPU_X86_64_) && !defined(USE_MCJIT)
         .setJITMemoryManager(createJITMemoryManagerWin())
 #elif defined(CUSTOM_MEMORY_MANAGER)
-        .setMCJITMemoryManager(std::move(std::unique_ptr<RTDyldMemoryManager>{createRTDyldMemoryManagerOSX()}))
+        .setMCJITMemoryManager(std::unique_ptr<RTDyldMemoryManager>{createRTDyldMemoryManagerOSX()})
 #elif defined(USE_ORCMCJIT) // ORCJIT forgets to create one if one isn't created for it
-        .setMCJITMemoryManager(std::move(std::unique_ptr<RTDyldMemoryManager>{new SectionMemoryManager()}))
+        .setMCJITMemoryManager(std::unique_ptr<RTDyldMemoryManager>{new SectionMemoryManager()})
 #endif
         .setTargetOptions(options)
 #if defined(_OS_LINUX_) && defined(_CPU_X86_64_)
