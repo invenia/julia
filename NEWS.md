@@ -84,7 +84,7 @@ Library improvements
 
     * Improve performance of `quantile` ([#14413]).
 
-  * The new `Base.StackTraces` module makes stack traces easier to use programmatically. ([#pr])
+  * The new `Base.StackTraces` module makes stack traces easier to use programmatically. ([#14469])
 
 Deprecated or removed
 ---------------------
@@ -1759,3 +1759,4 @@ Too numerous to mention.
 [#14243]: https://github.com/JuliaLang/julia/issues/14243
 [#14413]: https://github.com/JuliaLang/julia/issues/14413
 [#14424]: https://github.com/JuliaLang/julia/issues/14424
+[#14469]: https://github.com/JuliaLang/julia/issues/14469
