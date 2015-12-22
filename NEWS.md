@@ -70,12 +70,19 @@ Library improvements
       appropriate. The `sparsevec` function returns a one-dimensional sparse
       vector instead of a one-column sparse matrix. ([#13440])
 
+    * Rank one update and downdate functions, `lowrankupdate`, `lowrankupdate!`, `lowrankdowndate`,
+    and `lowrankdowndate!`, for dense Cholesky factorizations ([#14243],[#14424])
+
   * New `foreach` function for calling a function on every element of a collection when
     the results are not needed.
 
   * `Cmd(cmd; ...)` now accepts new Windows-specific options `windows_verbatim`
     (to alter Windows command-line generation) and `windows_hide` (to
     suppress creation of new console windows) ([#13780]).
+
+  * Statistics:
+
+    * Improve performance of `quantile` ([#14413]).
 
 Deprecated or removed
 ---------------------

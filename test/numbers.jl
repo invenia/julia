@@ -1610,19 +1610,6 @@ for T in (Int8,Int16,Int32,Int64,Int128, UInt8,UInt16,UInt32,UInt64,UInt128)
     @test typeof(fld(z,o)) === T
     @test typeof(mod(z,o)) === T
     @test typeof(cld(z,o)) === T
-
-    @test typeof(Base.checked_add(z)) === T
-    @test typeof(Base.checked_neg(z)) === T
-    @test typeof(Base.checked_abs(z)) === T
-    @test typeof(Base.checked_mul(z)) === T
-    @test typeof(Base.checked_add(z,z)) === T
-    @test typeof(Base.checked_sub(z,z)) === T
-    @test typeof(Base.checked_mul(z,z)) === T
-    @test typeof(Base.checked_div(z,o)) === T
-    @test typeof(Base.checked_rem(z,o)) === T
-    @test typeof(Base.checked_fld(z,o)) === T
-    @test typeof(Base.checked_mod(z,o)) === T
-    @test typeof(Base.checked_cld(z,o)) === T
 end
 
 # issue #4156
@@ -2329,25 +2316,32 @@ for T in (Int32,Int64), ii = -20:20, jj = -20:20
     end
 end
 
-# check powermod function against GMP
+# check powermod function against few types (in particular [U]Int128 and BigInt)
 for i = -10:10, p = 0:5, m = -10:10
-    if m != 0
-        @test powermod(i,p,m) == powermod(i,p,big(m)) == powermod(big(i),big(p),big(m))
-        @test mod(i^p,m) == powermod(i,p,m) == mod(big(i)^p,big(m))
+    m == 0 && continue
+    x = powermod(i, p, m)
+    for T in [Int32, Int64, Int128, UInt128, BigInt]
+        T <: Unsigned && m < 0 && continue
+        let xT = powermod(i, p, T(m))
+            @test x == xT
+            @test isa(xT, T)
+        end
+        T <: Unsigned && i < 0 && continue
+        @test x == mod(T(i)^p, T(m))
     end
 end
 
 # with m==1 should give 0
 @test powermod(1,0,1) == 0
-@test powermod(big(1),0,1) == 0
+@test powermod(1,0,big(1)) == 0
 @test powermod(1,0,-1) == 0
-@test powermod(big(1),0,-1) == 0
+@test powermod(1,0,big(-1)) == 0
 # divide by zero error
 @test_throws DivideError powermod(1,0,0)
-@test_throws DivideError powermod(big(1),0,0)
+@test_throws DivideError powermod(1,0,big(0))
 # negative power domain error
 @test_throws DomainError powermod(1,-2,1)
-@test_throws DomainError powermod(big(1),-2,1)
+@test_throws DomainError powermod(1,-2,big(1))
 
 # other divide-by-zero errors
 @test_throws DivideError div(1,0)
@@ -2471,7 +2465,7 @@ end
 # widen
 @test widen(1.5f0) === 1.5
 @test widen(Int32(42)) === Int64(42)
-@test widen(Int8) === Int
+@test widen(Int8) === Int32
 @test widen(Float32) === Float64
 ## Note: this should change to e.g. Float128 at some point
 @test widen(Float64) === BigFloat

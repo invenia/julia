@@ -8,8 +8,5 @@ include("helpdb/Libc.jl")
 include("helpdb/Collections.jl")
 include("helpdb/Profile.jl")
 include("helpdb/StackTraces.jl")
-include("helpdb/Cartesian.jl")
 include("helpdb/Base.jl")
 include("helpdb/Dates.jl")
-include("helpdb/Pkg.jl")
-
