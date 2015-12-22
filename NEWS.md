@@ -84,6 +84,8 @@ Library improvements
 
     * Improve performance of `quantile` ([#14413]).
 
+  * The new `Base.StackTraces` module makes stack traces easier to use programmatically. ([#pr])
+
 Deprecated or removed
 ---------------------
 
@@ -1741,14 +1743,19 @@ Too numerous to mention.
 [#12727]: https://github.com/JuliaLang/julia/issues/12727
 [#12739]: https://github.com/JuliaLang/julia/issues/12739
 [#13062]: https://github.com/JuliaLang/julia/issues/13062
+[#13232]: https://github.com/JuliaLang/julia/issues/13232
 [#13338]: https://github.com/JuliaLang/julia/issues/13338
 [#13387]: https://github.com/JuliaLang/julia/issues/13387
 [#13440]: https://github.com/JuliaLang/julia/issues/13440
 [#13465]: https://github.com/JuliaLang/julia/issues/13465
-[#13496]: https://github.com/JuliaLang/julia/issues/13496
 [#13480]: https://github.com/JuliaLang/julia/issues/13480
 [#13496]: https://github.com/JuliaLang/julia/issues/13496
 [#13542]: https://github.com/JuliaLang/julia/issues/13542
 [#13680]: https://github.com/JuliaLang/julia/issues/13680
 [#13681]: https://github.com/JuliaLang/julia/issues/13681
+[#13780]: https://github.com/JuliaLang/julia/issues/13780
 [#13824]: https://github.com/JuliaLang/julia/issues/13824
+[#13897]: https://github.com/JuliaLang/julia/issues/13897
+[#14243]: https://github.com/JuliaLang/julia/issues/14243
+[#14413]: https://github.com/JuliaLang/julia/issues/14413
+[#14424]: https://github.com/JuliaLang/julia/issues/14424
