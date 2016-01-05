@@ -49,14 +49,19 @@ lookup(pointer::UInt) = lookup(convert(Ptr{Void}, pointer))
 
 function stacktrace(trace::Vector{Ptr{Void}}, c_funcs::Bool=false)
     stack = map(lookup, trace)
+    warn("stacktrace map: " * stringmime(MIME("text/plain"), stack))
 
     # Remove frames that come from C calls.
     if !c_funcs
         filter!(frame -> !frame.from_c, stack)
     end
 
+    warn("stacktrace filter!: " * stringmime(MIME("text/plain"), stack))
+
     # Remove frame for this function (and any functions called by this function).
     remove_frames!(stack, :stacktrace)
+    warn("stacktrace remove_frames!: " * stringmime(MIME("text/plain"), stack))
+    return stack
 end
 
 stacktrace(c_funcs::Bool=false) = stacktrace(backtrace(), c_funcs)

@@ -15,6 +15,17 @@ if !APPVEYOR_WIN32
         @noinline grandparent() = parent()
         line_numbers = @__LINE__ - [3, 2, 1]
 
+        warn("code_lowered grandparent: " * string(code_lowered(grandparent)))
+        warn("code_lowered parent: " * string(code_lowered(parent)))
+        warn("code_lowered child: " * string(code_lowered(child)))
+
+        warn("code_llvm grandparent: ")
+        code_llvm(STDERR, grandparent, ())
+        warn("code_llvm parent: ")
+        code_llvm(STDERR, parent, ())
+        warn("code_llvm child: ")
+        code_llvm(STDERR, child, ())
+
         @testset "basic" begin
             stack = grandparent()
             @assert length(stack) == 3 "Compiler has unexpectedly inlined functions"
