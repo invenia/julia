@@ -9,7 +9,7 @@ let
     @noinline child() = stacktrace()
     @noinline parent() = child()
     @noinline grandparent() = parent()
-    line_numbers = [@__LINE__] .- [3, 2, 1]
+    line_numbers = @__LINE__ - [3, 2, 1]
 
     @testset "basic" begin
         stack = grandparent()
@@ -46,7 +46,7 @@ let
 end
 
 let
-    @noinline bad_function() = nonexistent_var
+    @noinline bad_function() = throw(UndefVarError(:non_existent))
     @noinline function good_function()
         try
             bad_function()
@@ -54,7 +54,7 @@ let
             return catch_stacktrace()
         end
     end
-    e_line_numbers = [@__LINE__] .- [8, 5]
+    e_line_numbers = @__LINE__ - [8, 5]
 
     @testset "try...catch" begin
         stack = good_function()
