@@ -13,6 +13,7 @@ let
 
     @testset "basic" begin
         stack = grandparent()
+        @assert length(stack) == 3 "Compiler has unexpectedly inlined functions"
         @test [:child, :parent, :grandparent] == [f.func for f in stack[1:3]]
         for (line, frame) in zip(line_numbers, stack[1:3])
             @test in(
