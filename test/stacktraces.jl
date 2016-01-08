@@ -5,44 +5,51 @@
 using Base.StackTraces
 using Base.StackTraces: StackFrame, StackTrace, remove_frames!
 
-let
-    @noinline child() = stacktrace()
-    @noinline parent() = child()
-    @noinline grandparent() = parent()
-    line_numbers = @__LINE__ - [3, 2, 1]
+# Some tests don't currently work for Appveyor 32-bit Windows
+const APPVEYOR_WIN32 = OS_NAME == :Windows && WORD_SIZE == 32 && get(ENV, "APPVEYOR", "False") == "True"
 
-    @testset "basic" begin
-        stack = grandparent()
-        @assert length(stack) == 3 "Compiler has unexpectedly inlined functions"
-        @test [:child, :parent, :grandparent] == [f.func for f in stack[1:3]]
-        for (line, frame) in zip(line_numbers, stack[1:3])
-            @test in(
-                [Symbol(@__FILE__), line],
-                ([frame.file, frame.line], [frame.inlined_file, frame.inlined_line])
-            )
+if !APPVEYOR_WIN32
+    let
+        @noinline child() = stacktrace()
+        @noinline parent() = child()
+        @noinline grandparent() = parent()
+        line_numbers = @__LINE__ - [3, 2, 1]
+
+        @testset "basic" begin
+            stack = grandparent()
+            @assert length(stack) == 3 "Compiler has unexpectedly inlined functions"
+            @test [:child, :parent, :grandparent] == [f.func for f in stack[1:3]]
+            for (line, frame) in zip(line_numbers, stack[1:3])
+                @test in(
+                    [Symbol(@__FILE__), line],
+                    ([frame.file, frame.line], [frame.inlined_file, frame.inlined_line])
+                )
+            end
+            @test [false, false, false] == [f.from_c for f in stack[1:3]]
         end
-        @test [false, false, false] == [f.from_c for f in stack[1:3]]
-    end
 
+        @testset "remove_frames!" begin
+            stack = remove_frames!(grandparent(), :parent)
+            @test stack[1] == StackFrame(
+                :grandparent, @__FILE__, line_numbers[3], Symbol(""), -1, false, 0
+            )
+
+            stack = remove_frames!(grandparent(), [:child, :something_nonexistent])
+            @test stack[1:2] == [
+                StackFrame(:parent, @__FILE__, line_numbers[2], Symbol(""), -1, false, 0),
+                StackFrame(:grandparent, @__FILE__, line_numbers[3], Symbol(""), -1, false, 0)
+            ]
+        end
+    end
+end
+
+let
     @testset "from_c" begin
         default, with_c, without_c = stacktrace(), stacktrace(true), stacktrace(false)
         @test default == without_c
         @test length(with_c) > length(without_c)
         @test !isempty(filter(frame -> frame.from_c, with_c))
         @test isempty(filter(frame -> frame.from_c, without_c))
-    end
-
-    @testset "remove_frames!" begin
-        stack = remove_frames!(grandparent(), :parent)
-        @test stack[1] == StackFrame(
-            :grandparent, @__FILE__, line_numbers[3], Symbol(""), -1, false, 0
-        )
-
-        stack = remove_frames!(grandparent(), [:child, :something_nonexistent])
-        @test stack[1:2] == [
-            StackFrame(:parent, @__FILE__, line_numbers[2], Symbol(""), -1, false, 0),
-            StackFrame(:grandparent, @__FILE__, line_numbers[3], Symbol(""), -1, false, 0)
-        ]
     end
 end
 
