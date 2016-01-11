@@ -5,6 +5,13 @@
 using Base.StackTraces
 using Base.StackTraces: StackFrame, StackTrace, remove_frames!
 
+# Basics
+@noinline child() = error("foo")
+@noinline parent() = child()
+@noinline grandparent() = parent()
+
+grandparent()
+
 # Some tests don't currently work for Appveyor 32-bit Windows
 const APPVEYOR_WIN32 = OS_NAME == :Windows && WORD_SIZE == 32 && get(ENV, "APPVEYOR", "False") == "True"
 
