@@ -1048,11 +1048,10 @@ export
     systemerror,
 
 # stack traces
+    StackTrace,
+    StackFrame,
     stacktrace,
     catch_stacktrace,
-    format_stacktrace,
-    format_stackframe,
-    show_stacktrace,
 
 # types
     convert,
