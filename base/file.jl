@@ -436,8 +436,21 @@ function readlink(path::AbstractString)
     end
 end
 
-function chmod(p::AbstractString, mode::Integer)
-    err = ccall(:jl_fs_chmod, Int32, (Cstring, Cint), p, mode)
+
+function chmod(path::AbstractString, mode::Integer; recursive::Bool=false)
+    if recursive && isdir(path)
+        for p in readdir(path)
+            chmod(joinpath(path, p), mode, recursive=true)
+        end
+    end
+    err = ccall(:jl_fs_chmod, Int32, (Cstring, Cint), path, mode)
     uv_error("chmod",err)
     nothing
 end
+
+
+
+
+
+
+
