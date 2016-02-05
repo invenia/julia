@@ -15,9 +15,6 @@ mkdir(subdir)
 subdir2 = joinpath(dir, "adir2")
 mkdir(subdir2)
 
-dir2 = mktempdir()
-subdir2_1 = joinpath(dir2, "cdir")
-
 @test_throws SystemError mkdir(file)
 let err = nothing
     try
@@ -70,13 +67,15 @@ chmod(file, filemode(file) | 0o222)
 @test filemode(file) & 0o111 == 0
 @test filesize(file) == 0
 
-mkdir(subdir2_1)
-@test filemode(dir2) & 0o444 > 0 # readable
-@test filemode(dir2) & 0o222 > 0 # writable
-@test filemode(subdir2_1) & 0o222 > 0 # writable
-chmod(dir2, filemode(dir2) & 0o7555, recursive=true)
-@test filemode(dir2) & 0o222 == 0
-@test filemode(subdir2_1) & 0o222 == 0
+permissions = 0o707
+@test filemode(dir) & 0o777 != permissions
+@test filemode(subdir) & 0o777 != permissions
+@test filemode(file) & 0o777 != permissions
+chmod(dir, permissions, recursive=true)
+@test filemode(dir) & 0o777 == permissions
+@test filemode(subdir) & 0o777 == permissions
+@test filemode(file) & 0o777 == permissions
+@unix_only @test lstat(link).mode & 0o777 != permissions  # Symbolic links are not modified
 
 # On windows the filesize of a folder is the accumulation of all the contained
 # files and is thus zero in this case.
