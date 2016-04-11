@@ -296,56 +296,38 @@ Base.promote_rule(::Type{Year}, ::Type{Month}) = Month
 (==){T<:OtherPeriod,S<:OtherPeriod}(x::T,y::S) = (==)(promote(x,y)...)
 Base.isless{T<:OtherPeriod,S<:OtherPeriod}(x::T,y::S) = isless(promote(x,y)...)
 
-# isless for CompoundPeriod
-function Base.isless{C<:CompoundPeriod}(x::C,y::C)
-    xlen = length(x.periods)
-    ylen = length(y.periods)
-    i = 1
-
-    while true
-        if i > xlen && i > ylen
-            return false
-        elseif i > xlen
-            return y.periods[i].value > 0
-        elseif i > ylen
-            return x.periods[i].value < 0
+# isless for GeneralPeriod -- will be used when no specific method exists for a type.
+function compare(x::GeneralPeriod,y::GeneralPeriod)
+    xtotal::Float64 = 0
+    if isa(x, CompoundPeriod)
+        for val in x.periods
+            xtotal = xtotal + Dates.toms(val)
         end
-
-        xi = x.periods[i]
-        yi = y.periods[i]
-
-        if typeof(xi) == typeof(yi)
-            if xi.value < yi.value
-                return true
-            elseif yi.value < xi.value
-                return false
-            end
-        else
-            # Periodisless for different types only checks what is the 'smaller' type,
-            # not lower in absolute value.
-            if periodisless(xi, yi)
-                # yi is more significant than xi
-                return yi.value > 0
-            elseif periodisless(yi, xi)
-                # xi is more significant than yi
-                return xi.value < 0
-            end
-        end
-
-        i = i + 1
+    else
+        xtotal = Dates.toms(x)
     end
 
-    return false
+    ytotal::Float64 = 0
+    if isa(y, CompoundPeriod)
+        for val in y.periods
+            ytotal = ytotal + Dates.toms(val)
+        end
+    else
+        ytotal = Dates.toms(y)
+    end
+
+    if xtotal < ytotal
+        return 1
+    elseif xtotal == ytotal
+        return 0
+    else
+        return -1
+    end
 end
 
-# Enable isless with CompoundPeriod and any form of Period
-for p in (:Year,:Month,:Week,:Day,:Hour,:Minute,:Second,:Millisecond)
-    @eval Base.promote_rule(::Type{CompoundPeriod}, ::Type{$p}) = CompoundPeriod
-    @eval Base.promote_rule(::Type{$p}, ::Type{CompoundPeriod}) = CompoundPeriod
+function Base.isless(x::GeneralPeriod, y::GeneralPeriod)
+    return compare(x, y) == 1
 end
-
-Base.isless(x::CompoundPeriod, y::Period) = isless(promote(x, y)...)
-Base.isless(x::Period, y::CompoundPeriod) = isless(promote(x, y)...)
 
 # truncating conversions to milliseconds and days:
 toms(c::Millisecond) = value(c)

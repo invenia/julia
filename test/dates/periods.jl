@@ -232,7 +232,7 @@ test = ((((((((dt + y) - m) + w) - d) + h) - mi) + s) - ms)
 @test Dates.Millisecond(-1) < Dates.Millisecond(1)
 @test !(Dates.Millisecond(-1) > Dates.Millisecond(1))
 @test Dates.Millisecond(1) == Dates.Millisecond(1)
-@test_throws MethodError Dates.Year(1) < Dates.Millisecond(1)
+@test Dates.Year(1) > Dates.Millisecond(1)
 
 @test Dates.Year("1") == y
 @test Dates.Month("1") == m
@@ -354,104 +354,38 @@ cpa = [1y+1s 1m+1s 1w+1s 1d+1s; 1h+1s 1mi+1s 2m+1s 1s+1ms]
 @test [1y+1s 1m+1s; 1w+1s 1d+1s] - [1y+1h 1y+1mi; 1y+1s 1y+1ms] == [1s-1h 1m+1s-1y-1mi; 1w-1y 1d+1s-1y-1ms]
 
 # Testing isless for compound periods, as well as mixed with normal periods.
-isless_tests = [
-    # Testing compound periods vs regular periods:
-    (   (Dates.Month(1), Dates.Day(1)),
-        Dates.Day(2),
-        false
-    ),
-    (   Dates.Day(2),
-        (Dates.Month(1), Dates.Day(2)),
-        true
-    ),
-    (   Dates.Year(2),
-        (Dates.Month(1), Dates.Day(2)),
-        false
-    ),
-    (   (Dates.Month(1), Dates.Day(2)),
-        Dates.Year(2),
-        true
-    ),
+@test Base.Dates.compare(Dates.Week(1) + Dates.Day(2), Dates.Year(1)) == 1
+@test Base.Dates.compare(Dates.Week(1) + Dates.Day(2), Dates.Year(0)) == -1
+@test Base.Dates.compare(Dates.Week(1) + Dates.Day(2), Dates.Year(-1)) == -1
+@test Base.Dates.compare(Dates.Week(1) + Dates.Day(2) + Dates.Month(2), Dates.Month(1)) == -1
+@test Base.Dates.compare(Dates.Week(1) + Dates.Day(2) + Dates.Month(2), Dates.Month(0)) == -1
+@test Base.Dates.compare(Dates.Week(1) + Dates.Day(2) + Dates.Month(2), Dates.Month(-1)) == -1
+@test Base.Dates.compare(Dates.Week(1) + Dates.Day(2) + Dates.Month(2), Dates.Year(1)) == 1
+@test Base.Dates.compare(Dates.Week(1) + Dates.Day(2) + Dates.Month(2), Dates.Year(0)) == -1
+@test Base.Dates.compare(Dates.Week(1) + Dates.Day(2) + Dates.Month(2), Dates.Year(-1)) == -1
+@test Base.Dates.compare(Dates.Week(1) + Dates.Day(2) + Dates.Month(2), Dates.Second(1)) == -1
+@test Base.Dates.compare(Dates.Week(1) + Dates.Day(2) + Dates.Month(2), Dates.Second(0)) == -1
+@test Base.Dates.compare(Dates.Week(1) + Dates.Day(2) + Dates.Month(2), Dates.Second(-1)) == -1
+@test Base.Dates.compare(Dates.Day(2) + Dates.Month(2), Dates.Week(3)) == -1
+@test Base.Dates.compare(Dates.Day(2) + Dates.Month(2), Dates.Week(0)) == -1
+@test Base.Dates.compare(Dates.Day(2) + Dates.Month(2), Dates.Week(-3)) == -1
+@test Base.Dates.compare(Dates.Day(2) + Dates.Month(-2), Dates.Week(3)) == 1
+@test Base.Dates.compare(Dates.Day(2) + Dates.Month(-2), Dates.Week(0)) == 1
+@test Base.Dates.compare(Dates.Day(2) + Dates.Month(-2), Dates.Week(-3)) == 1
+@test Base.Dates.compare(Dates.Month(-2), Dates.Week(-3)) == 1
 
-    (   (Dates.Month(12), Dates.Day(2)),
-        Dates.Year(1),
-        false
-    ),
-    (   Dates.Year(1),
-        (Dates.Month(12), Dates.Day(2)),
-        true
-    ),
+@test isless(Dates.Month(1) + Dates.Day(1), Dates.Day(2)) == false
+@test isless(Dates.Day(2), Dates.Month(1) + Dates.Day(2)) == true
+@test isless(Dates.Month(1) + Dates.Day(2), Dates.Year(2)) == true
+@test isless(Dates.Month(12) + Dates.Day(2), Dates.Year(1)) == false
+@test isless(Dates.Year(1), Dates.Month(12) + Dates.Day(2)) == true
+@test isless(Dates.Year(-1), Dates.Month(-13) + Dates.Day(1)) == false
+@test isless(Dates.Month(-13) + Dates.Day(1), Dates.Year(-1)) == true
+@test isless(Dates.Year(-1) + Dates.Day(1), Dates.Year(-1)) == false
+@test isless(Dates.Year(-1) + Dates.Day(-1), Dates.Year(-1)) == true
+@test isless(Dates.Year(-1) + Dates.Day(1), Dates.Year(-1) + Dates.Day(-1)) == false
+@test isless(Dates.Year(-1) + Dates.Day(-1), Dates.Year(-1) + Dates.Day(1)) == true
+@test isless(Dates.Year(-1) + Dates.Month(1) + Dates.Day(1), Dates.Year(-1) + Dates.Month(1) + Dates.Day(-1)) == false
+@test isless(Dates.Year(-1) + Dates.Month(1) + Dates.Day(-1), Dates.Year(-1) + Dates.Month(1) + Dates.Day(1)) == true
+@test isless(Dates.Year(-1) + Dates.Month(1) + Dates.Day(-1), Dates.Year(-1) + Dates.Month(1) + Dates.Day(-1)) == false
 
-    # Testing negative values
-    (   Dates.Year(-1),
-        (Dates.Month(-13),Dates.Day(1)),
-        false
-    ),
-    (   (Dates.Month(-13),Dates.Day(1)),
-        Dates.Year(-1),
-        true
-    ),
-
-    (   (Dates.Year(-1),Dates.Day(1)),
-        Dates.Year(-1),
-        false
-    ),
-    (   (Dates.Year(-1),Dates.Day(-1)),
-        Dates.Year(-1),
-        true
-    ),
-
-    # Testing compound periods vs compound periods
-    (   (Dates.Year(-1), Dates.Day(1)),
-        (Dates.Year(-1), Dates.Day(-1)),
-        false
-    ),
-    (   (Dates.Year(-1), Dates.Day(-1)),
-        (Dates.Year(-1), Dates.Day(1)),
-        true
-    ),
-    (   (Dates.Year(-1), Dates.Month(1), Dates.Day(1)),
-        (Dates.Year(-1), Dates.Month(1), Dates.Day(-1)),
-        false
-    ),
-    (   (Dates.Year(-1), Dates.Month(1), Dates.Day(-1)),
-        (Dates.Year(-1), Dates.Month(1), Dates.Day(1)),
-        true
-    ),
-
-    # Testing equal periods
-    (   (Year(-1), Month(1), Day(-1)),
-        (Year(-1), Month(1), Day(-1)),
-        false
-    ),
-]
-
-for test in isless_tests
-    if isa(test[1], Tuple)
-        len = length(test[1])
-        tokens = Array(Dates.Period, len)
-        for i in range(1, len)
-            tokens[i] = test[1][i]
-        end
-
-        x = Dates.CompoundPeriod(tokens)
-    else
-        x = test[1]
-    end
-
-    if isa(test[2], Tuple)
-        len = length(test[2])
-        tokens = Array(Dates.Period, len)
-        for i in range(1, len)
-            tokens[i] = test[2][i]
-        end
-
-        y = Dates.CompoundPeriod(tokens)
-    else
-        y = test[2]
-    end
-
-    actual = test[3]
-    predicted = Dates.isless(x, y)
-    @test predicted == actual
-end
