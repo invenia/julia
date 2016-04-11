@@ -316,10 +316,12 @@ function compare(x::GeneralPeriod,y::GeneralPeriod)
         ytotal = Dates.toms(y)
     end
 
-    if xtotal < ytotal
-        return 1
-    elseif xtotal == ytotal
+    # Will only occur for near exact ms matches for any normal date ranges - but just in case
+    # this is used for some truly massive periods in the future, replacing == with ≈
+    if xtotal ≈ ytotal
         return 0
+    elseif xtotal < ytotal
+        return 1
     else
         return -1
     end
