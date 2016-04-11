@@ -380,6 +380,7 @@ function download(url::AbstractString; silent::Bool=true)
     filename = tempname()
     @unix_only download(url, filename, silent=silent)
     @windows_only download(url, filename)
+    filename
 end
 
 # workspace management
