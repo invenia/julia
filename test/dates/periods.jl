@@ -352,3 +352,106 @@ cpa = [1y+1s 1m+1s 1w+1s 1d+1s; 1h+1s 1mi+1s 2m+1s 1s+1ms]
 
 @test [1y+1s 1m+1s; 1w+1s 1d+1s] + [1y+1h 1y+1mi; 1y+1s 1y+1ms] == [2y+1h+1s 1y+1m+1mi+1s; 1y+1w+2s 1y+1d+1s+1ms]
 @test [1y+1s 1m+1s; 1w+1s 1d+1s] - [1y+1h 1y+1mi; 1y+1s 1y+1ms] == [1s-1h 1m+1s-1y-1mi; 1w-1y 1d+1s-1y-1ms]
+
+# Testing isless for compound periods, as well as mixed with normal periods.
+isless_tests = [
+    # Testing compound periods vs regular periods:
+    (   (Dates.Month(1), Dates.Day(1)),
+        Dates.Day(2),
+        false
+    ),
+    (   Dates.Day(2),
+        (Dates.Month(1), Dates.Day(2)),
+        true
+    ),
+    (   Dates.Year(2),
+        (Dates.Month(1), Dates.Day(2)),
+        false
+    ),
+    (   (Dates.Month(1), Dates.Day(2)),
+        Dates.Year(2),
+        true
+    ),
+
+    (   (Dates.Month(12), Dates.Day(2)),
+        Dates.Year(1),
+        false
+    ),
+    (   Dates.Year(1),
+        (Dates.Month(12), Dates.Day(2)),
+        true
+    ),
+
+    # Testing negative values
+    (   Dates.Year(-1),
+        (Dates.Month(-13),Dates.Day(1)),
+        false
+    ),
+    (   (Dates.Month(-13),Dates.Day(1)),
+        Dates.Year(-1),
+        true
+    ),
+
+    (   (Dates.Year(-1),Dates.Day(1)),
+        Dates.Year(-1),
+        false
+    ),
+    (   (Dates.Year(-1),Dates.Day(-1)),
+        Dates.Year(-1),
+        true
+    ),
+
+    # Testing compound periods vs compound periods
+    (   (Dates.Year(-1), Dates.Day(1)),
+        (Dates.Year(-1), Dates.Day(-1)),
+        false
+    ),
+    (   (Dates.Year(-1), Dates.Day(-1)),
+        (Dates.Year(-1), Dates.Day(1)),
+        true
+    ),
+    (   (Dates.Year(-1), Dates.Month(1), Dates.Day(1)),
+        (Dates.Year(-1), Dates.Month(1), Dates.Day(-1)),
+        false
+    ),
+    (   (Dates.Year(-1), Dates.Month(1), Dates.Day(-1)),
+        (Dates.Year(-1), Dates.Month(1), Dates.Day(1)),
+        true
+    ),
+
+    # Testing equal periods
+    (   (Year(-1), Month(1), Day(-1)),
+        (Year(-1), Month(1), Day(-1)),
+        false
+    ),
+]
+
+for test in isless_tests
+    if isa(test[1], Tuple)
+        len = length(test[1])
+        tokens = Array(Dates.Period, len)
+        for i in range(1, len)
+            tokens[i] = test[1][i]
+        end
+
+        x = Dates.CompoundPeriod(tokens)
+    else
+        x = test[1]
+    end
+
+    if isa(test[2], Tuple)
+        len = length(test[2])
+        tokens = Array(Dates.Period, len)
+        for i in range(1, len)
+            tokens[i] = test[2][i]
+        end
+
+        y = Dates.CompoundPeriod(tokens)
+    else
+        y = test[2]
+    end
+
+    actual = test[3]
+    predicted = Dates.isless(x, y)
+    @test predicted == actual
+end
