@@ -11,13 +11,19 @@ using Base.Test
 @test strip("\t  hi   \n") == "hi"
 @test strip("\t  this should fail   \n") != "hi"
 
+# Test messages don't destroy everything
+@test true "hi"
+@test_throws ErrorException error() "hi"
+# Test messages on pass results
+@test contains(sprint(show, @test true "this will show up"),"Message: this will show up")
+@test contains(sprint(show, @test_throws ErrorException error() "this will also show up"), "Message: this will also show up")
+
 a = Array(Float64, 2, 2, 2, 2, 2)
 a[1,1,1,1,1] = 10
 @test a[1,1,1,1,1] == 10
 @test a[1,1,1,1,1] != 2
 
 @test rand() != rand()
-
 # Test printing of Pass results
 # Pass - constant
 @test contains(sprint(show, @test true), "Expression: true")
@@ -52,6 +58,25 @@ end
 @test contains(sprint(show, fails[2]), "No exception thrown")
 @test contains(sprint(show, fails[3]), "Evaluated: false")
 @test contains(sprint(show, fails[4]), "Evaluated: 2 == 4")
+
+# Test Error and Fail messages
+fails = @testset NoThrowTestSet begin
+    # Fail - wrong exception
+    @test_throws OverflowError error() "throw 1"
+    # Fail - no exception
+    @test_throws OverflowError 1 + 1 "throw 2"
+    # Fail - const
+    @test false "fail 1"
+    # Fail - comparison
+    @test 1+1 == 2+2 "fail 2"
+end
+for i in 1:4
+    @test isa(fails[i], Base.Test.Fail)
+end
+@test contains(sprint(show, fails[1]), "Message: throw 1")
+@test contains(sprint(show, fails[2]), "Message: throw 2")
+@test contains(sprint(show, fails[3]), "Message: fail 1")
+@test contains(sprint(show, fails[4]), "Message: fail 2")
 
 # Test printing of a TestSetException
 tse_str = sprint(show, Test.TestSetException(1,2,3))
