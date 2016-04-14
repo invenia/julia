@@ -111,6 +111,24 @@ function installed(pkg::AbstractString)
     return nothing # registered but not installed
 end
 
+function addrequire(requirefile::AbstractString)
+    requirements = Reqs.parse(Reqs.read(requirefile))
+    cd(Pkg.dir()) do
+        if haskey(requirements, "julia")
+            if !(VERSION in requirements["julia"])
+                error("Installed julia version $VERSION differs from specified versions in $requirefile: $(requirements["julia"])")
+            end
+            delete!(requirements, "julia")
+        end
+        skip = Entry.installed()
+        for (pkg,versions) in requirements
+            if !haskey(skip, pkg) || !(skip[pkg] in versions)
+                Entry.add(pkg, versions)
+            end
+        end
+    end
+end
+
 function status(io::IO; pkgname::AbstractString = "")
     showpkg(pkg) = (pkgname == "") ? (true) : (pkg == pkgname)
     reqs = Reqs.parse("REQUIRE")

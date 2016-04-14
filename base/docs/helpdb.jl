@@ -11831,6 +11831,13 @@ Add a requirement entry for `pkg` to `Pkg.dir("REQUIRE")` and call `Pkg.resolve(
 Pkg.add(pkg, vers...)
 
 doc"""
+    addrequire(requirefile)
+
+Loads a REQUIRE file and adds all packages listed. This first checks if there is a specified julia version, and if so, whether the currently installed version is compatible. Next, this adds a requirement entry for each package to `Pkg.dir("REQUIRE")` and calls `Pkg.resolve()`.
+"""
+Pkg.addrequire(requirefile)
+
+doc"""
     tag(pkg, [ver, [commit]])
 
 Tag `commit` as version `ver` of package `pkg` and create a version entry in `METADATA`. If not provided, `commit` defaults to the current commit of the `pkg` repo. If `ver` is one of the symbols `:patch`, `:minor`, `:major` the next patch, minor or major version is used. If `ver` is not provided, it defaults to `:patch`.

@@ -5,7 +5,7 @@ module Pkg
 export Git, Dir, GitHub, Types, Reqs, Cache, Read, Query, Resolve, Write, Generate, Entry
 export dir, init, rm, add, available, installed, status, clone, checkout,
        update, resolve, register, tag, publish, generate, test,
-       build, free, pin
+       build, free, pin, addrequire
 
 const DEFAULT_META = "git://github.com/JuliaLang/METADATA.jl"
 const META_BRANCH = "metadata-v2"
@@ -21,6 +21,7 @@ init(meta::AbstractString=DEFAULT_META, branch::AbstractString=META_BRANCH) = Di
 edit() = cd(Entry.edit)
 rm(pkg::AbstractString) = cd(Entry.rm,pkg)
 add(pkg::AbstractString, vers::VersionNumber...) = cd(Entry.add,pkg,vers...)
+addrequire(requirefile::AbstractString) = Entry.addrequire(requirefile)
 
 available() = cd(Entry.available)
 available(pkg::AbstractString) = cd(Entry.available,pkg)
