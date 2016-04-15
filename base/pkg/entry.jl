@@ -112,12 +112,11 @@ function installed(pkg::AbstractString)
 end
 
 function addrequire(requirefile::AbstractString)
+    isfile(requirefile) || error("File '$requirefile' not found")
     requirements = Reqs.parse(Reqs.read(requirefile))
     cd(Pkg.dir()) do
         if haskey(requirements, "julia")
-            if !(VERSION in requirements["julia"])
-                error("Installed julia version $VERSION differs from specified versions in $requirefile: $(requirements["julia"])")
-            end
+            VERSION in requirements["julia"] || error("Installed julia $VERSION not in $(requirements["julia"])")
             delete!(requirements, "julia")
         end
         skip = Entry.installed()
