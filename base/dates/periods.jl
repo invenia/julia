@@ -149,15 +149,11 @@ type CompoundPeriod <: AbstractTime
             i = j = 1
             while j <= n
                 k = j+1
-                while k <= n
-                    if typeof(p[j]) == typeof(p[k])
-                        p[j] += p[k]
-                        k += 1
-                    else
-                        break
-                    end
+                while k <= n && typeof(p[j]) == typeof(p[k])
+                    p[j] += p[k]
+                    k += 1
                 end
-                if p[j] != zero(p[j])
+                if value(p[j]) != 0
                     p[i] = p[j]
                     i += 1
                 end
@@ -168,35 +164,7 @@ type CompoundPeriod <: AbstractTime
             p = Period[]
             n = 0
         end
-        # canonicalize Period values so that 0 < ms < 1000 etcetera.
-        if n > 0
-            pc = sizehint!(Period[], n)
-            P = typeof(p[n])
-            v = value(p[n])
-            i = n - 1
-            while true
-                Pc, f = coarserperiod(P)
-                if i > 0 && typeof(p[i]) == P
-                    v += value(p[i])
-                    i -= 1
-                end
-                v0 = f == 1 ? v : mod(v, f)
-                v0 != 0 && push!(pc, P(v0))
-                if v != v0
-                    P = Pc
-                    v = div(v - v0, f)
-                elseif i > 0
-                    P = typeof(p[i])
-                    v = value(p[i])
-                    i -= 1
-                else
-                    break
-                end
-            end
-            return new(reverse!(pc))
-        else
-            return new(resize!(p, n))
-        end
+        return new(resize!(p, n))
     end
 end
 Base.convert(::Type{CompoundPeriod}, x::Period) = CompoundPeriod(Period[x])
@@ -212,6 +180,45 @@ function Base.string(x::CompoundPeriod)
     end
 end
 Base.show(io::IO,x::CompoundPeriod) = print(io,string(x))
+
+function condense(x::CompoundPeriod)
+    p = x.periods
+    n = length(p)
+    # Assume the Periods are already sorted
+    # canonicalize Period values so that 0 < ms < 1000 etcetera.
+    if n > 0
+        parray = sizehint!(Period[], n)
+        P = typeof(p[n])
+        val = value(p[n])
+        i = n - 1
+        while true
+            if i > 0 && typeof(p[i]) == P
+                val += value(p[i])
+                i -= 1
+            end
+
+            P_course, val_course = coarserperiod(P)
+            val_mod = val_course == 1 ? val : mod(val, val_course)
+            val_mod != 0 && push!(parray, P(val_mod))
+
+            if val != val_mod
+                P = P_course
+                val = div(val - val_mod, val_course)
+            elseif i > 0
+                P = typeof(p[i])
+                val = value(p[i])
+                i -= 1
+            else
+                break
+            end
+        end
+        return CompoundPeriod(reverse!(parray))
+    else
+        return x
+    end
+end
+
+condense(x::Period) = condense(CompoundPeriod(x))
 
 # E.g. Year(1) + Day(1)
 (+)(x::Period,y::Period) = CompoundPeriod(Period[x,y])
@@ -248,7 +255,7 @@ end
 
 (==)(x::CompoundPeriod, y::Period) = x == CompoundPeriod(y)
 (==)(y::Period, x::CompoundPeriod) = x == y
-(==)(x::CompoundPeriod, y::CompoundPeriod) = x.periods == y.periods
+(==)(x::GeneralPeriod, y::GeneralPeriod) = condense(x).periods == condense(y).periods
 
 # Capture TimeType+-Period methods
 (+)(a::TimeType,b::Period,c::Period) = (+)(a,b+c)

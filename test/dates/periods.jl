@@ -92,6 +92,11 @@ y2 = Dates.Year(2)
 @test y2 > y
 @test y != y2
 
+p = Dates.CompoundPeriod([Year(1), Month(12), Week(4), Day(7), Hour(24), Minute(60), Second(60), Millisecond(1000)])
+@test Dates.string(p) == "1 year, 12 months, 4 weeks, 7 days, 24 hours, 60 minutes, 60 seconds, 1000 milliseconds"
+@test Dates.string(Dates.condense(p)) == "2 years, 5 weeks, 1 day, 1 hour, 1 minute, 1 second"
+@test Dates.string(Dates.condense((Day(15)))) == "2 weeks, 1 day"
+
 @test Dates.Year(Int8(1)) == y
 @test Dates.Year(UInt8(1)) == y
 @test Dates.Year(Int16(1)) == y
