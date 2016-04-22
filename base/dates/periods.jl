@@ -309,6 +309,41 @@ Base.promote_rule(::Type{Year}, ::Type{Month}) = Month
 (==){T<:OtherPeriod,S<:OtherPeriod}(x::T,y::S) = (==)(promote(x,y)...)
 Base.isless{T<:OtherPeriod,S<:OtherPeriod}(x::T,y::S) = isless(promote(x,y)...)
 
+# isless for GeneralPeriod -- will be used when no specific method exists for a type.
+function compare(x::GeneralPeriod,y::GeneralPeriod)
+    xtotal::Float64 = 0
+    if isa(x, CompoundPeriod)
+        for val in x.periods
+            xtotal = xtotal + Dates.toms(val)
+        end
+    else
+        xtotal = Dates.toms(x)
+    end
+
+    ytotal::Float64 = 0
+    if isa(y, CompoundPeriod)
+        for val in y.periods
+            ytotal = ytotal + Dates.toms(val)
+        end
+    else
+        ytotal = Dates.toms(y)
+    end
+
+    # Will only occur for near exact ms matches for any normal date ranges - but just in case
+    # this is used for some truly massive periods in the future, replacing == with ≈
+    if xtotal ≈ ytotal
+        return 0
+    elseif xtotal < ytotal
+        return 1
+    else
+        return -1
+    end
+end
+
+function Base.isless(x::GeneralPeriod, y::GeneralPeriod)
+    return compare(x, y) == 1
+end
+
 # truncating conversions to milliseconds and days:
 toms(c::Millisecond) = value(c)
 toms(c::Second)      = 1000*value(c)
