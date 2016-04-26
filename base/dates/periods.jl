@@ -185,6 +185,7 @@ type CompoundPeriod <: AbstractTime
         end
     end
 end
+
 Base.convert(::Type{CompoundPeriod}, x::Period) = CompoundPeriod(Period[x])
 function Base.string(x::CompoundPeriod)
     if isempty(x.periods)
@@ -213,6 +214,12 @@ Base.show(io::IO,x::CompoundPeriod) = print(io,string(x))
 GeneralPeriod = Union{Period,CompoundPeriod}
 (+)(x::GeneralPeriod) = x
 (+){P<:GeneralPeriod}(x::StridedArray{P}) = x
+
+Base.convert{N<:Number}(::Type{N}, x::CompoundPeriod) = convert(N, toms(x))
+div(x::GeneralPeriod, y::GeneralPeriod) = CompoundPeriod(Millisecond(div(toms(x),toms(y))))
+rem(x::GeneralPeriod, y::GeneralPeriod) = CompoundPeriod(Millisecond(toms(x)%toms(y)))
+Base.zero(x::CompoundPeriod)= CompoundPeriod([])
+Base.one(x::CompoundPeriod)= sum(one,x.periods)
 
 for op in (:.+, :.-)
     op_ = symbol(string(op)[2:end])

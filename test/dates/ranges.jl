@@ -223,6 +223,11 @@ function test_all_combos()
 end
 test_all_combos()
 
+# CompoundPeriod range creation
+@test length(Dates.CompoundPeriod(Day(1)):Dates.CompoundPeriod(Day(1)):Dates.CompoundPeriod(Day(7))) == length(Day(1):Day(1):Day(7))
+@test length(Day(1)+Day(1):Hour(12)+Hour(12):Year(1)) == 364
+@test first(Week(1)+Day(1):Week(1):Month(1)+Day(1)) == Week(1)+Day(1)
+@test last(Day(1):Day(1)+Day(1):Week(5)) == Week(5)
 # All the range representations we want to test
 # Date ranges
 dr  = Dates.DateTime(2013,1,1):Dates.DateTime(2013,2,1)
