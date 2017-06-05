@@ -2,21 +2,8 @@
 
 import Base.Pkg.PkgError
 
-function capture_stdout(f::Function)
-    let fname = tempname()
-        try
-            open(fname, "w") do fout
-                redirect_stdout(fout) do
-                    f()
-                end
-            end
-            return readstring(fname)
-        finally
-            rm(fname, force=true)
-        end
-    end
-end
-
+isdefined(Main, :TestHelpers) || @eval Main include(joinpath(dirname(@__FILE__), "TestHelpers.jl"))
+import TestHelpers: capture_stdout, capture_stderr
 
 function temp_pkg_dir(fn::Function, tmp_dir=joinpath(tempdir(), randstring()),
         remove_tmp_dir::Bool=true; initialize::Bool=true)
@@ -37,6 +24,12 @@ function temp_pkg_dir(fn::Function, tmp_dir=joinpath(tempdir(), randstring()),
             remove_tmp_dir && rm(tmp_dir, recursive=true)
         end
     end
+end
+
+function write_build(pkg, content)
+    build_filename = Pkg.dir(pkg, "deps", "build.jl")
+    mkpath(dirname(build_filename))
+    write(build_filename, content)
 end
 
 # Test basic operations: adding or removing a package, status, free
@@ -531,6 +524,53 @@ temp_pkg_dir() do
             "redirect_stderr(STDOUT); using Example; Pkg.update(\"$package\")"`))
         @test contains(msg, "- $package\nRestart Julia to use the updated versions.")
     end
+
+    # Verify that the --startup-file flag is respected by Pkg.build / Pkg.test
+    let package = "StartupFile"
+        content = """
+            info("JULIA_RC_LOADED defined \$(isdefined(:JULIA_RC_LOADED))")
+            info("Main.JULIA_RC_LOADED defined \$(isdefined(Main, :JULIA_RC_LOADED))")
+            """
+
+        write_build(package, content)
+
+        test_filename = Pkg.dir(package, "test", "runtests.jl")
+        mkpath(dirname(test_filename))
+        write(test_filename, content)
+
+        # Make a .juliarc.jl
+        home = Pkg.dir(".home")
+        mkdir(home)
+        write(joinpath(home, ".juliarc.jl"), "const JULIA_RC_LOADED = true")
+
+        withenv("HOME" => home) do
+            code = "Pkg.build(\"$package\")"
+            err = capture_stderr() do
+                run(`$(Base.julia_cmd()) --startup-file=no -e $code`)
+            end
+            @test contains(err, "INFO: JULIA_RC_LOADED defined false")
+            @test contains(err, "INFO: Main.JULIA_RC_LOADED defined false")
+
+            err = capture_stderr() do
+                run(`$(Base.julia_cmd()) --startup-file=yes -e $code`)
+            end
+            @test contains(err, "INFO: JULIA_RC_LOADED defined false")
+            @test contains(err, "INFO: Main.JULIA_RC_LOADED defined true")
+
+            code = "Pkg.test(\"$package\")"
+            err = capture_stderr() do
+                run(`$(Base.julia_cmd()) --startup-file=no -e $code`)
+            end
+            @test contains(err, "INFO: JULIA_RC_LOADED defined false")
+            @test contains(err, "INFO: Main.JULIA_RC_LOADED defined false")
+
+            err = capture_stderr() do
+                run(`$(Base.julia_cmd()) --startup-file=yes -e $code`)
+            end
+            @test contains(err, "INFO: JULIA_RC_LOADED defined false")
+            @test contains(err, "INFO: Main.JULIA_RC_LOADED defined true")
+        end
+    end
 end
 
 @testset "Pkg functions with .jl extension" begin
@@ -594,12 +634,6 @@ end
 end
 
 temp_pkg_dir(initialize=false) do
-    function write_build(pkg, content)
-        build_filename = Pkg.dir(pkg, "deps", "build.jl")
-        mkpath(dirname(build_filename))
-        write(build_filename, content)
-    end
-
     write_build("Normal", "")
     write_build("Error", "error(\"An error has occurred while building a package\")")
     write_build("Exit", "exit()")

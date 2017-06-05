@@ -5,6 +5,36 @@ module TestHelpers
 include("dimensionful.jl")
 export Furlong
 
+function capture_stdout(f::Function)
+    let fname = tempname()
+        try
+            open(fname, "w") do stream
+                redirect_stdout(stream) do
+                    f()
+                end
+            end
+            return readstring(fname)
+        finally
+            rm(fname, force=true)
+        end
+    end
+end
+
+function capture_stderr(f::Function)
+    let fname = tempname()
+        try
+            open(fname, "w") do stream
+                redirect_stderr(stream) do
+                    f()
+                end
+            end
+            return readstring(fname)
+        finally
+            rm(fname, force=true)
+        end
+    end
+end
+
 mutable struct FakeTerminal <: Base.Terminals.UnixTerminal
     in_stream::Base.IO
     out_stream::Base.IO
